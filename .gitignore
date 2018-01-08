@@ -4,3 +4,6 @@ consumer/node_modules
 .idea
 .tmp-output.yml
 deploy.conf
+consumer/package-lock.json
+worker/package-lock.json
+package-lock.json

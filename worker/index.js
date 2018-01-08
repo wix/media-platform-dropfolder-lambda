@@ -16,9 +16,6 @@ const AWS_REGION = process.env.AWS_REGION;
 
 const {WIXMP_IMPORT_DESTINATION, WIXMP_TRANSCODE_DESTINATION, WIXMP_OVERRIDE_EXISTING, WIXMP_USE_TIMESTAMP_IN_PATH}  = process.env;
 
-const sqs = new AWS.SQS({region: AWS_REGION});
-const s3 = new AWS.S3({region: AWS_REGION});
-
 // init wixMP
 const mediaPlatform = new MediaPlatform({
     domain: process.env.WIXMP_DOMAIN,
@@ -28,6 +25,7 @@ const mediaPlatform = new MediaPlatform({
 
 
 function deleteMessage(receiptHandle, cb) {
+    const sqs = new AWS.SQS({region: AWS_REGION});
     sqs.deleteMessage({
         ReceiptHandle: receiptHandle,
         QueueUrl: TASK_QUEUE_URL
@@ -105,52 +103,52 @@ function work(task, callback) {
 
     const eventBody = _.get(task, ['Records', '0'], null);
     if(eventBody) {
+        const s3 = new AWS.S3({region: AWS_REGION});
+
         const bucketName = _.get(eventBody, ['s3', 'bucket', 'name'], null);
         const timestamp = new Date().getTime();
         const objectKey = _.get(eventBody, ['s3', 'object', 'key'], null);
         if(bucketName && objectKey) {
-            const fileUrl = s3.getSignedUrl('getObject', {
+            s3.getSignedUrl('getObject', {
                 Bucket: bucketName,
                 Key: objectKey,
                 Expires: 60 * 5
-            });
+            }, function(err, fileUrl) {
+                const useTimestamp = WIXMP_USE_TIMESTAMP_IN_PATH === "true" && WIXMP_OVERRIDE_EXISTING === "false";
 
-            const useTimestamp = WIXMP_USE_TIMESTAMP_IN_PATH === "true" && WIXMP_OVERRIDE_EXISTING === "false";
-
-            const importPath = WIXMP_IMPORT_DESTINATION + ( useTimestamp ? '/' + timestamp : '' ) + "/" + objectKey;
-            const transcodeDirectory = WIXMP_TRANSCODE_DESTINATION + ( useTimestamp ? '/' + timestamp : '' );
+                const importPath = WIXMP_IMPORT_DESTINATION + ( useTimestamp ? '/' + timestamp : '' ) + "/" + objectKey;
+                const transcodeDirectory = WIXMP_TRANSCODE_DESTINATION + ( useTimestamp ? '/' + timestamp : '' );
 
 
-            if(WIXMP_OVERRIDE_EXISTING === "true") {
-                // lets delete the file if it exists
-                getFile(importPath, function(err, result) {
-                    if(err) {
-                        const errObj = JSON.parse(err.message);
-                        if(errObj.code === 404) {
-                            // 404 means file does not exist, we are good to go
-                            startInvocation(fileUrl, importPath, transcodeDirectory, callback);
-                        } else {
-                            // this is another error, we need to fail
-                            console.log("Error checking if file exists in wixmp", err);
-                            callback(err);
-                        }
-                    } else if(result) {
-                        // delete
-                        deleteFile(importPath, function(err, result) {
-                            if(err) {
-                                console.log("Error deleting file from wixmp", err);
-                                callback(err);
-                            } else {
+                if(WIXMP_OVERRIDE_EXISTING === "true") {
+                    // lets delete the file if it exists
+                    getFile(importPath, function(err, result) {
+                        if(err) {
+                            const errObj = JSON.parse(err.message);
+                            if(errObj.code === 404) {
+                                // 404 means file does not exist, we are good to go
                                 startInvocation(fileUrl, importPath, transcodeDirectory, callback);
+                            } else {
+                                // this is another error, we need to fail
+                                console.log("Error checking if file exists in wixmp", err);
+                                callback(err);
                             }
-                        });
-                    }
-                });
-            } else {
-                startInvocation(fileUrl, importPath, transcodeDirectory, callback);
-            }
-
-
+                        } else if(result) {
+                            // delete
+                            deleteFile(importPath, function(err, result) {
+                                if(err) {
+                                    console.log("Error deleting file from wixmp", err);
+                                    callback(err);
+                                } else {
+                                    startInvocation(fileUrl, importPath, transcodeDirectory, callback);
+                                }
+                            });
+                        }
+                    });
+                } else {
+                    startInvocation(fileUrl, importPath, transcodeDirectory, callback);
+                }
+            });
         } else {
             // error
             callback("bucketName or objectKey are not set in the event data " + JSON.stringify(task), null);

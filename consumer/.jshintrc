@@ -31,6 +31,7 @@
   "es5": false,
   "esnext": false,
   "moz": false,
+  "mocha": true,
   "evil": false,
   "expr": false,
   "funcscope": false,

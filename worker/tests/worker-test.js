@@ -3,6 +3,7 @@
 const lambdaLocal = require('lambda-local');
 const fs = require('fs');
 const expect = require('expect.js');
+const AWSMock = require('aws-sdk-mock');
 
 const path = require('path');
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
@@ -16,14 +17,24 @@ let WIXMP_TRANSCODE_DESTINATION = "/test/transcodes";
 let WIXMP_OVERRIDE_EXISTING = "false";
 let WIXMP_USE_TIMESTAMP_IN_PATH = "false";
 
-const mediaPlatform = new MediaPlatform({
-    domain: WIXMP_DOMAIN,
-    appId: WIXMP_APPID,
-    sharedSecret: WIXMP_SHARED_SECRET,
-});
-
 describe('dropfolder integration tests', function() {
     this.timeout(30 * 1000); // 15 sec timeout
+
+    beforeEach(function() {
+        AWSMock.mock("SQS", "deleteMessage", function(params, callback) {
+            callback(null, "successfully deleted message");
+        });
+
+        AWSMock.mock('S3', 'getSignedUrl', function (operation, params, callback) {
+            callback(null, "http://www.example.com/signedUrl");
+        });
+    });
+
+    afterEach(function() {
+        AWSMock.restore("SQS", "deleteMessage");
+        AWSMock.restore("S3", "getSignedUrl");
+    });
+
     it("S3 SQS Event invokes Flow Control", function (done) {
         const jsonPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/s3put.json')));
 
