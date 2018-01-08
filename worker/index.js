@@ -112,7 +112,7 @@ function work(task, callback) {
             s3.getSignedUrl('getObject', {
                 Bucket: bucketName,
                 Key: objectKey,
-                Expires: 60 * 5
+                Expires: 60 * 30
             }, function(err, fileUrl) {
                 const useTimestamp = WIXMP_USE_TIMESTAMP_IN_PATH === "true" && WIXMP_OVERRIDE_EXISTING === "false";
 
