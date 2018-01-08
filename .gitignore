@@ -1,0 +1,6 @@
+node_modules
+worker/node_modules
+consumer/node_modules
+.idea
+.tmp-output.yml
+deploy.conf

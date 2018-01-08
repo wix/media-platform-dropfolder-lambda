@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::Serverless-2016-10-31'
+Description: Wix Media Platform Dropfolder using S3, SQS, and Lambda.
+Conditions:
+  CreateS3BucketCondition: !Equals [ !Ref DeployUsingExistingS3Bucket, "false"]
+  DeployUsingS3BucketNameCondition: !Not [!Equals [!Ref DeployUsingS3BucketName, ""]]
+Resources:
+  TaskQueue:
+    Type: 'AWS::SQS::Queue'
+    Properties:
+      VisibilityTimeout: 60
+      RedrivePolicy:
+        deadLetterTargetArn: !Sub '${DeadLetterQueue.Arn}'
+        maxReceiveCount: 10
+  DeadLetterQueue:
+    Type: 'AWS::SQS::Queue'
+  TaskQueueS3EventPolicy:
+    Type: 'AWS::SQS::QueuePolicy'
+    DependsOn:
+      - 'TaskQueue'
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: "arn:aws:s3:::*"
+            Action: 'SQS:*'
+      Queues:
+        - Ref: "TaskQueue"
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Condition:
+      CreateS3BucketCondition
+    Properties:
+      BucketName:
+        !If [DeployUsingS3BucketNameCondition, !Ref DeployUsingS3BucketName, !Ref "AWS::NoValue"]
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Queue: !GetAtt TaskQueue.Arn
+            Event: 's3:ObjectCreated:*'
+    DependsOn:
+      - TaskQueue
+      - DeadLetterQueue
+      - TaskQueueS3EventPolicy
+  ConsumerLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: logs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+        - PolicyName: sqs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:ReceiveMessage'
+                Resource: !Sub '${TaskQueue.Arn}'
+        - PolicyName: lambda
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'lambda:InvokeFunction'
+                Resource: !Sub '${WorkerLambda.Arn}'
+  ConsumerLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./consumer
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub '${ConsumerLambdaRole.Arn}'
+      Runtime: nodejs6.10
+      Timeout: 60
+      Environment:
+        Variables:
+          TASK_QUEUE_URL: !Ref TaskQueue
+          WORKER_LAMBDA_NAME: !Ref WorkerLambda
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+  WorkerLambdaRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: s3
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 's3:GetObject'
+                Resource:
+                  !If
+                  - CreateS3BucketCondition
+                  - !Join
+                    - ''
+                    - - !GetAtt S3Bucket.Arn
+                      - '/*'
+                  - !Join
+                    - ''
+                    - - 'arn:aws:s3:::'
+                      - !Ref DeployUsingS3BucketName
+                      - '/*'
+        - PolicyName: logs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:*:*:*'
+        - PolicyName: sqs
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:DeleteMessage'
+                Resource: !Sub '${TaskQueue.Arn}'
+  WorkerLambda:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      CodeUri: ./worker
+      Handler: index.handler
+      MemorySize: 128
+      Role: !Sub '${WorkerLambdaRole.Arn}'
+      Runtime: nodejs6.10
+      Timeout: 60
+      Environment:
+        Variables:
+          TASK_QUEUE_URL: !Ref TaskQueue
+          WIXMP_DOMAIN:
+            Ref: "WixmpDomain"
+          WIXMP_APPID:
+            Ref: "WixmpAppId"
+          WIXMP_SHARED_SECRET:
+            Ref: "WixmpSharedSecret"
+          WIXMP_IMPORT_DESTINATION:
+            Ref: "WixmpImportDestination"
+          WIXMP_TRANSCODE_DESTINATION:
+            Ref: "WixmpTranscodeDestination"
+          WIXMP_USE_TIMESTAMP_IN_PATH:
+            Ref: "WixmpUseTimestampInPath"
+          WIXMP_OVERRIDE_EXISTING:
+            Ref: "WixmpOverrideExisting"
+Parameters:
+  WixmpDomain:
+    Type: String
+    Description: "Wixmp Domain (Required)"
+  WixmpAppId:
+    Type: String
+    Description: "Wixmp AppId (Required)"
+  WixmpSharedSecret:
+    Type: String
+    Description: "Wixmp Shared Secret (Required)"
+  WixmpImportDestination:
+    Type: String
+    Default: "/imports"
+    Description: "Destination of import files in wixmp"
+  WixmpTranscodeDestination:
+    Type: String
+    Default: "/transcodes"
+    Description: "Destination of trascoded files in wixmp"
+  WixmpUseTimestampInPath:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Add current timestamp to transcode destination url (for avoiding conflicting paths on same filename)"
+  WixmpOverrideExisting:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Override existing files for same filename. When this is set to true, the script ignores WixmpUseTimestampInPath"
+  DeployUsingExistingS3Bucket:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+    Description: "Instead of deploying a new s3 bucket, deploy using an existing S3 bucket"
+  DeployUsingS3BucketName:
+    Type: String
+    Default: ""
+    Description: "Set custom S3 bucket name - avoid using special characters"

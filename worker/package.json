@@ -1,0 +1,22 @@
+{
+  "name": "wixmp-dropfolder-worker-lambda",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "scripts": {
+    "lint": "./node_modules/.bin/jshint .",
+    "test": "./node_modules/.bin/mocha tests/worker-test.js",
+    "test-e2e": "./node_modules/.bin/mocha tests/worker-test-e2e.js"
+  },
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "media-platform-js-sdk": "^5.3.22-beta"
+  },
+  "devDependencies": {
+    "jshint": "2.9.1",
+    "mocha": "^4.1.0",
+    "expect.js": "^0.3.1"
+  }
+}

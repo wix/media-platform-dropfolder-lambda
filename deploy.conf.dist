@@ -1,0 +1,9 @@
+WixmpDomain=<wixmp-domain>
+WixmpAppId=<wixmp-app-id>
+WixmpSharedSecret=<wixmp-shared-secret>
+WixmpImportDestination=/imports
+WixmpTranscodeDestination=/transcodes
+WixmpUseTimestampInPath=false
+WixmpOverrideExisting=true
+DeployUsingExistingS3Bucket=false
+DeployUsingS3BucketName=
