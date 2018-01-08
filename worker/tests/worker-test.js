@@ -76,7 +76,6 @@ function executeLambda(payload, callback) {
         event: payload,
         lambdaPath: path.join(__dirname, '../index.js'),
         lambdaHandler: "handler",
-        profilePath: '~/.aws/credentials',
         region: 'us-east-1',
         environment: {
             "WIXMP_DOMAIN": WIXMP_DOMAIN,
