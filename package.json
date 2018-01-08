@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "postinstall": "cd consumer && npm install && cd ../worker && npm install && cd ..",
     "test": "cd consumer && npm test && cd ../worker && npm test && cd ..",
     "package": "aws cloudformation package --template-file cloudformation.yml --output-template-file .tmp-output.yml",
     "deploy": "aws cloudformation deploy --template-file .tmp-output.yml --capabilities CAPABILITY_IAM --parameter-overrides $(cat deploy.conf)"
