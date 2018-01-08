@@ -35,7 +35,7 @@ function deleteMessage(receiptHandle, cb) {
 function getFile(path, callback) {
     mediaPlatform.fileManager.getFile(path, function(error, result) {
         if(error) {
-            console.log("Error in getFile");
+            console.log("Error in getFile", error);
             callback(error);
         } else if(result) {
             callback(null, result);
