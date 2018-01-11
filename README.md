@@ -18,6 +18,9 @@ The components in a nutshell:
 ## Instructions
 
 ### Prerequisites
+Install Node Package Manager (NPM)
+https://www.npmjs.com/get-npm
+
 Install and configure amazon aws CLI
 https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html
 
