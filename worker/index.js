@@ -2,19 +2,16 @@
 
 const _ = require('lodash');
 const AWS = require('aws-sdk');
-const Invocation = require("media-platform-js-sdk/src/platform/management/metadata/invocation");
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
-const ImportFileRequest = require('media-platform-js-sdk/src/platform/management/requests/import-file-request');
-const Destination = require("media-platform-js-sdk/src/platform/management/job/destination");
-const FlowComponent = require("media-platform-js-sdk/src/platform/management/metadata/flow-component");
-const TranscodeSpecification = require("media-platform-js-sdk/src/platform/management/job/transcode-specification");
 const CreateFlowRequest = require("media-platform-js-sdk/src/platform/management/requests/create-flow-request");
-const QualityRange = require("media-platform-js-sdk").QualityRange;
+
+const fs = require("fs");
+const path = require('path');
 
 const TASK_QUEUE_URL = process.env.TASK_QUEUE_URL;
 const AWS_REGION = process.env.AWS_REGION;
 
-const {WIXMP_IMPORT_DESTINATION, WIXMP_TRANSCODE_DESTINATION, WIXMP_OVERRIDE_EXISTING, WIXMP_USE_TIMESTAMP_IN_PATH}  = process.env;
+const {WIXMP_IMPORT_DESTINATION, WIXMP_TRANSCODE_DESTINATION, WIXMP_OVERRIDE_EXISTING, WIXMP_USE_TIMESTAMP_IN_PATH, WIXMP_FLOW_USE_JSON_FILE}  = process.env;
 
 // init wixMP
 const mediaPlatform = new MediaPlatform({
@@ -54,37 +51,22 @@ function deleteFile(path, callback) {
 }
 
 function startInvocation(fileUrl, importPath, transcodeDirectory, callback) {
-    const invocation = new Invocation()
-        .addEntryPoint("import");
+    let createFlowJsonObject = {};
 
-    const importFileRequest = new ImportFileRequest()
-        .setDestination(new Destination().setPath(importPath).setAcl("public"))
-        .setSourceUrl(fileUrl);
+    try {
+        let createFlowJson = fs.readFileSync(path.join(__dirname, process.env.WIXMP_FLOW_USE_JSON_FILE)).toString();
 
-    const importComponent = new FlowComponent()
-        .setType('file.import')
-        .setSpecification(importFileRequest)
-        .addSuccessor('transcode');
+        createFlowJson = createFlowJson.replace("{importUrl}", fileUrl)
+            .replace("{importDestination}", importPath)
+            .replace("{transcodeDestination}", transcodeDirectory);
 
-    const transcodeSpecification = new TranscodeSpecification()
-        .setDestination(new Destination()
-            .setDirectory(transcodeDirectory)
-            .setAcl("public")
-        ).setQualityRange(new QualityRange({minimum: "240p", maximum: "1440p"} ));
+        createFlowJsonObject = JSON.parse(createFlowJson);
+    } catch (e) {
+        console.log("error in parsing json ", e);
+        callback("error in parsing json " + JSON.stringify(e));
+    }
 
-    const transcodeComponent = new FlowComponent()
-        .setType('av.transcode')
-        .setSpecification(transcodeSpecification)
-        .setSuccessors(['urlsetcreate']);
-
-    const urlsetComponent = new FlowComponent()
-        .setType('urlset.create');
-
-    const createFlowRequest = new CreateFlowRequest()
-        .setInvocation(invocation)
-        .addFlowComponent("import", importComponent)
-        .addFlowComponent("transcode", transcodeComponent)
-        .addFlowComponent("urlsetcreate", urlsetComponent);
+    const createFlowRequest = new CreateFlowRequest(createFlowJsonObject);
 
     mediaPlatform.flowManager.createFlow(createFlowRequest, function(err, data) {
         if(err) {

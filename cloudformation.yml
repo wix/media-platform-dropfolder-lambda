@@ -172,6 +172,8 @@ Resources:
             Ref: "WixmpUseTimestampInPath"
           WIXMP_OVERRIDE_EXISTING:
             Ref: "WixmpOverrideExisting"
+          WIXMP_FLOW_USE_JSON_FILE:
+            Ref: "WixmpFlowUseJsonFile"
 Parameters:
   WixmpDomain:
     Type: String
@@ -204,6 +206,10 @@ Parameters:
       - "true"
       - "false"
     Description: "Override existing files for same filename. When this is set to true, the script ignores WixmpUseTimestampInPath"
+  WixmpFlowUseJsonFile:
+    Type: String
+    Default: "json/default-flow.json"
+    Description: "Use Flow from JSON File. Use {importUrl}, {importDestination}, and {transcodeDestination} tokens"
   DeployUsingExistingS3Bucket:
     Type: String
     Default: "false"

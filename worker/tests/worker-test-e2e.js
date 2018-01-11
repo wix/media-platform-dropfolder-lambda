@@ -15,6 +15,7 @@ let WIXMP_IMPORT_DESTINATION = "/teste2e/imports";
 let WIXMP_TRANSCODE_DESTINATION = "/teste2e/transcodes";
 let WIXMP_OVERRIDE_EXISTING = "false";
 let WIXMP_USE_TIMESTAMP_IN_PATH = "false";
+let WIXMP_FLOW_USE_JSON_FILE = "json/default-flow.json";
 
 const mediaPlatform = new MediaPlatform({
     domain: WIXMP_DOMAIN,
@@ -111,6 +112,7 @@ function executeLambda(payload, callback) {
             "WIXMP_TRANSCODE_DESTINATION": WIXMP_TRANSCODE_DESTINATION,
             "WIXMP_OVERRIDE_EXISTING": WIXMP_OVERRIDE_EXISTING,
             "WIXMP_USE_TIMESTAMP_IN_PATH": WIXMP_USE_TIMESTAMP_IN_PATH,
+            "WIXMP_FLOW_USE_JSON_FILE": WIXMP_FLOW_USE_JSON_FILE,
             "LAMBDA_LOCAL": true,
             "AWS_REGION": "us-east-1",
             "TASK_QUEUE_URL": null

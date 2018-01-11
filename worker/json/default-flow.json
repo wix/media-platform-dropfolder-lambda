@@ -1,0 +1,53 @@
+{
+  "invocation": {
+    "sources": [],
+    "entryPoints": [
+      "import"
+    ]
+  },
+  "flow": {
+    "import": {
+      "type": "file.import",
+      "specification": {
+        "sourceUrl": "{importUrl}",
+        "externalAuthorization": null,
+        "destination": {
+          "path": "{importDestination}",
+          "directory": null,
+          "acl": "public"
+        }
+      },
+      "successors": [
+        "transcode"
+      ],
+      "status": null
+    },
+    "transcode": {
+      "type": "av.transcode",
+      "specification": {
+        "destination": {
+          "path": null,
+          "directory": "{transcodeDestination}",
+          "acl": "public"
+        },
+        "quality": null,
+        "qualityRange": {
+          "minimum": "240p",
+          "maximum": "1440p"
+        },
+        "video": null,
+        "audio": null
+      },
+      "successors": [
+        "urlsetcreate"
+      ],
+      "status": null
+    },
+    "urlsetcreate": {
+      "type": "av.create_urlset",
+      "specification": null,
+      "successors": null,
+      "status": null
+    }
+  }
+}
