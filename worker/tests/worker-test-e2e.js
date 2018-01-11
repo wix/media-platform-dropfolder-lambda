@@ -2,17 +2,22 @@
 
 const lambdaLocal = require('lambda-local');
 const fs = require('fs');
+const guid = require('guid');
 const expect = require('expect.js');
+const _ = require('lodash');
 
 const path = require('path');
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
+const UploadFileRequest = require('media-platform-js-sdk').file.UploadFileRequest;
 
 const WIXMP_DOMAIN = "wixmp-410a67650b2f46baa5d003c6.appspot.com";
 const WIXMP_APPID = "48fa9aa3e9d342a3a33e66af08cd7fe3";
 const WIXMP_SHARED_SECRET = "fad475d88786ab720b04f059ac674b0e";
 
-let WIXMP_IMPORT_DESTINATION = "/teste2e/imports";
-let WIXMP_TRANSCODE_DESTINATION = "/teste2e/transcodes";
+const testGuid = guid.create();
+
+let WIXMP_IMPORT_DESTINATION = "/teste2e/imports/" + testGuid.value;
+let WIXMP_TRANSCODE_DESTINATION = "/teste2e/transcodes/" + testGuid.value;
 let WIXMP_OVERRIDE_EXISTING = "false";
 let WIXMP_USE_TIMESTAMP_IN_PATH = "false";
 let WIXMP_FLOW_USE_JSON_FILE = "json/default-flow.json";
@@ -75,23 +80,29 @@ describe('dropfolder e2e tests', function() {
     it("Existing file is not overwritten", function(done) {
         const jsonPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/s3put.json')));
 
-        WIXMP_USE_TIMESTAMP_IN_PATH = "false";
+        const uploadRequest = new UploadFileRequest();
+        uploadRequest.setAcl("public");
+        uploadRequest.setMimeType("video/mp4");
 
-        executeLambda(jsonPayload, function (err, data) {
-            if (err) {
-                console.log(err);
-                done();
-            } else {
-                console.log(data);
-                // loop around to get the flow
-                setTimeout(() => {
-                    getFlow(data, function (err, result) {
-                        expect(err).to.be(null);
-                        expect(result).to.be(false);
-                        done();
-                    });
-                }, 5000);
-            }
+        mediaPlatform.fileManager.uploadFile(WIXMP_IMPORT_DESTINATION + "/video.mp4", path.join(__dirname, 'resources/video.mp4'), uploadRequest, function(err, result) {
+            WIXMP_USE_TIMESTAMP_IN_PATH = "false";
+
+            executeLambda(jsonPayload, function (err, data) {
+                if (err) {
+                    console.log(err);
+                    done();
+                } else {
+                    console.log(data);
+                    // loop around to get the flow
+                    setTimeout(() => {
+                        getFlow(data, function (err, result) {
+                            expect(err).to.be(null);
+                            expect(result).to.be(false);
+                            done();
+                        });
+                    }, 5000);
+                }
+            });
         });
     });
 });

@@ -6,7 +6,6 @@ const expect = require('expect.js');
 const AWSMock = require('aws-sdk-mock');
 
 const path = require('path');
-const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
 
 const WIXMP_DOMAIN = "wixmp-410a67650b2f46baa5d003c6.appspot.com";
 const WIXMP_APPID = "48fa9aa3e9d342a3a33e66af08cd7fe3";
