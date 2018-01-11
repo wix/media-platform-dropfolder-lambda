@@ -75,12 +75,16 @@ function startInvocation(fileUrl, importPath, transcodeDirectory, callback) {
     const transcodeComponent = new FlowComponent()
         .setType('av.transcode')
         .setSpecification(transcodeSpecification)
-        .setSuccessors([]);
+        .setSuccessors(['urlsetcreate']);
+
+    const urlsetComponent = new FlowComponent()
+        .setType('urlset.create');
 
     const createFlowRequest = new CreateFlowRequest()
         .setInvocation(invocation)
         .addFlowComponent("import", importComponent)
-        .addFlowComponent("transcode", transcodeComponent);
+        .addFlowComponent("transcode", transcodeComponent)
+        .addFlowComponent("urlsetcreate", urlsetComponent);
 
     mediaPlatform.flowManager.createFlow(createFlowRequest, function(err, data) {
         if(err) {
