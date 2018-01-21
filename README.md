@@ -117,7 +117,7 @@ If set to `true`, any existing files in WixMP with the same name will be deleted
 * default: `false`
 
 If set to `true`, together with the `DeployUsingS3BucketName` parameter, instructs CloudFormation to use an already existing bucket instead of creating a new bucket.
-Important Note: Files that existed in the bucket prior to running CloudFormation will not be imported.  
+Important Note: You will need to manually define the events to trigger the Lambda via SQS. Also, Ffiles that existed in the bucket prior to running CloudFormation will not be imported.  
 
 ### DeployUsingS3BucketName
 * optional (required if DeployUsingExistingS3Bucket is true)
