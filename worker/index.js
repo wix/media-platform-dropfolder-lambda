@@ -93,7 +93,7 @@ function work(task, callback) {
 
         const bucketName = _.get(eventBody, ['s3', 'bucket', 'name'], null);
         const timestamp = new Date().getTime();
-        const objectKey = _.get(eventBody, ['s3', 'object', 'key'], null);
+        const objectKey = decodeURIComponent(_.get(eventBody, ['s3', 'object', 'key'], null));
         if(bucketName && objectKey) {
             s3.getSignedUrl('getObject', {
                 Bucket: bucketName,
@@ -104,7 +104,8 @@ function work(task, callback) {
 
                 const importPath = WIXMP_IMPORT_DESTINATION + ( useTimestamp ? '/' + timestamp : '' ) + "/" + objectKey;
                 const transcodeDirectory = WIXMP_TRANSCODE_DESTINATION + ( useTimestamp ? '/' + timestamp : '' );
-
+                console.log("Import Path", importPath);
+                console.log("Signed URL", fileUrl);
 
                 if(WIXMP_OVERRIDE_EXISTING === "true") {
                     // lets delete the file if it exists
