@@ -12,7 +12,7 @@
           "object": {
             "eTag": "f5ea6d9e1de2ae552f4dbedcbcf9bb94",
             "sequencer": "0A1B2C3D4E5F678901",
-            "key": "video.mp4",
+            "key": "video%28somespecialchars%29.mp4",
             "size": 4151438
           },
           "bucket": {
