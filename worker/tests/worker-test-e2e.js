@@ -4,7 +4,6 @@ const lambdaLocal = require('lambda-local');
 const fs = require('fs');
 const guid = require('guid');
 const expect = require('expect.js');
-const _ = require('lodash');
 
 const path = require('path');
 const MediaPlatform = require('media-platform-js-sdk').MediaPlatform;
@@ -74,6 +73,16 @@ describe('dropfolder e2e tests', function() {
                     });
                 }, 5000);
             }
+        });
+    });
+
+    it("File that's not a video is not being imported", function(done) {
+        const jsonPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/s3put_image.json')));
+
+        executeLambda(jsonPayload, function (err, data) {
+            expect(err).to.contain("File is not a video, skipping");
+            expect(data).to.be(undefined);
+            done();
         });
     });
 

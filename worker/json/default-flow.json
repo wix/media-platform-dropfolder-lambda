@@ -32,7 +32,7 @@
         },
         "quality": null,
         "qualityRange": {
-          "minimum": "240p",
+          "minimum": "360p",
           "maximum": "1440p"
         },
         "video": null,

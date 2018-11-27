@@ -47,6 +47,17 @@ describe('dropfolder integration tests', function() {
         });
     });
 
+    it("Image file does not upload", function(done) {
+        const jsonPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/s3put_image.json')));
+
+        executeLambda(jsonPayload, function (err, data) {
+            expect(err).to.contain("File is not a video, skipping");
+            expect(data).to.be(undefined);
+            done();
+        });
+
+    });
+
     it("Empty event body fails to parse", function (done) {
         const jsonPayload = JSON.parse(fs.readFileSync(path.join(__dirname, 'examples/badevent.json')));
 

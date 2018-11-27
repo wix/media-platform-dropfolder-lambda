@@ -7,5 +7,8 @@
     "test": "cd consumer && npm test && cd ../worker && npm test && cd ..",
     "package": "aws cloudformation package --template-file cloudformation.yml --output-template-file .tmp-output.yml",
     "deploy": "aws cloudformation deploy --template-file .tmp-output.yml --capabilities CAPABILITY_IAM --parameter-overrides $(cat deploy.conf)"
+  },
+  "dependencies": {
+    "mime-types": "^2.1.21"
   }
 }
